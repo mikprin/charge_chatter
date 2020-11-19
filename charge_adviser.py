@@ -23,7 +23,7 @@ class Chatter():
 
         self.update_battery()
 
-        was_plugged = battery.power_plugged
+        #was_plugged = battery.power_plugged
 
         #Define actions!
         self.actions_battery_lvl = []
@@ -37,26 +37,32 @@ class Chatter():
 
 
 
+
     def listen(self):
         ''' Main method! Here it loops! '''
         while True:
+            self.update_battery()
+            print(self.pluged)
+            print(self.battery)
             # Get battery readings
-            self.check_actions(actions_plug , self.pluged)
-            self.check_actions(actions_battery_lvl , self.battery)
+            self.check_actions(self.actions_plug , self.pluged)
+            self.check_actions(self.actions_battery_lvl , self.battery)
 
             # CPU unload
-            time.sleep(time_to_skip)
+            time.sleep(self.config.time_to_skip)
 
-    def check_actions(actions_array, arg):
+    def check_actions(self,actions_array, arg):
         for action in actions_array:
             if action.check(arg):
+                #print(f"Check for {action.topic}")
                 self.say(action.topic)
 
 
     def update_battery(self):
-        self.battery = psutil.sensors_battery()
-        self.pluged = self.battery.power_plugged
-        return self.battery
+        battery = psutil.sensors_battery()
+        self.battery = battery.percent
+        self.pluged =  battery.power_plugged
+        print('updated bat')
 
     def enable_pyttsx3(self):
         import pyttsx3
@@ -117,3 +123,8 @@ class Action():
 if __name__ ==  '__main__':
     #Case direct call
     chatter = Chatter(Config())
+    print(chatter.actions_battery_lvl)
+    print(chatter.actions_plug)
+    #chatter.say("less_5")
+
+    chatter.listen()
