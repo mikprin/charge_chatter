@@ -24,7 +24,7 @@ class Config():
 
     'less_5':["Proposal. If you have no charger, power me off immediately!"],
     'more_90': ["Almost done!","Charged at 90 persent. Proposal. Stop charging to save some accumulator efficiency."],
-    'not_a_laptop':["Sorry buddy. This is not a laptop. Proposal: install me on your laptop. Bye!"],
+    #'not_a_laptop':["Sorry buddy. This is not a laptop. Proposal: install me on your laptop. Bye!"],
     #'atom_on':["It seems that"],
     'random_events':["I'm still here and you are still amaizing!","Another day. Another problems to solve.","Sound check. Are you still there human?"]
     }
