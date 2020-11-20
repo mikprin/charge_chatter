@@ -14,7 +14,7 @@ class Chatter():
     """Main Chatter class."""
     def __init__(self, config):
         self.config = config
-
+        self. =
         self.enable_pyttsx3()
         self.enable_gTTS()
 
@@ -40,6 +40,7 @@ class Chatter():
             self.actions_battery_lvl.append( Action('less_10' , func = (lambda x: x < 10) , args0 = self.battery,  type = "less"))
             self.actions_battery_lvl.append( Action('less_50' , func = (lambda x: x < 50) , args0 = self.battery ,  type = "less"))
             self.actions_battery_lvl.append( Action( 'more_90' , func = (lambda x: x > 90) , args0 = self.battery  , type = "less"))
+            self.actions_battery_lvl.append( Action('40_charged', func = (lambda x: x > 40), args0 = self.battery, type = "less"))
             self.actions_plug.append( Action('plug_on' , func = (lambda x: x == True ) , args0 = self.pluged ,  type = "less"))
             self.actions_plug.append( Action( 'plug_off' , func = (lambda x: x == False) , args0 = self.pluged , type = "less"))
 
@@ -84,15 +85,18 @@ class Chatter():
     def enable_gTTS(self):
         from gtts import gTTS
 
-    def say(self,topic , mode = "topic"):
+    def say(self,topic , mode = "topic" , args = None):
         if mode == "topic":
             phrase = random.choice(self.config.phrases[topic])
-        if mode == "phrase":
+        elif mode == "phrase":
             phrase = topic
+        elif mode == "interactive"
+            phrase = topic(args)
         else: return 1
 
         if self.config.voice_mode == 'gTTS':
             if self.is_connected():
+                #print("Say")
                 tts = gTTS(text=phrase, lang=self.config.lang)
                 tts.save("phrase.mp3")
                 os.system("mpg123 -q phrase.mp3")
@@ -100,6 +104,9 @@ class Chatter():
         else:
             engine.say(phrase)
             engine.runAndWait()
+
+    def charge_level(self):
+        pass
 
 
     def is_connected(self):
@@ -124,13 +131,26 @@ class Chatter():
             # Windows...
             self.platform = "windows"
 
+    def new_action(self, name , phrase = ["Test phrase"] , func = None , args = None , type = "swich" , delay = None )
 
 
-class Action():
+
+
+        while 1:
+
+
+
+            time.sleep(self.config.time_to_skip)
+
+
+
+class Action(threading.Thread):
     """Class for templating actions.
     'Swich' type just swich back and forth.
     'less' type triggers when less then once"""
-    def __init__(self, topic , func = None , args0 = None  ,type = "swich" , delay = None ):
+    def __init__(self, name , config , func = None , args0 = None  ,type = "swich" , delay = None , phrases = [] , phrase_args = {} ):
+        threading.Thread.__init__(self)
+        self.name = name
         self.func = func
         self.args0 = args0
         self.type = type
@@ -153,11 +173,28 @@ class Action():
 
             self.base_flag = self.func(args0)
 
+    def run(self):
+        time.sleep(self.config.time_to_skip)
 
+    def say(self,topic , mode = "topic" , args = None):
+        if mode == "topic":
+            phrase = random.choice(self.config.phrases[topic])
+        elif mode == "phrase":
+            phrase = topic
+        elif mode == "interactive"
+            phrase = topic(args)
+        else: return 1
 
-
-
-
+        if self.config.voice_mode == 'gTTS':
+            if self.is_connected():
+                #print("Say")
+                tts = gTTS(text=phrase, lang=self.config.lang)
+                tts.save("phrase.mp3")
+                os.system("mpg123 -q phrase.mp3")
+                os.system("rm phrase.mp3")
+        else:
+            engine.say(phrase)
+            engine.runAndWait()
 
     def check(self,args):
         if (self.type == "swich" or self.type == "less" ) and args == None:
