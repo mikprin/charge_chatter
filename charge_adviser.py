@@ -1,6 +1,6 @@
 # Set config name here:
 from config import *
-
+import threading
 import psutil
 import time
 import random
@@ -14,17 +14,19 @@ class Chatter():
     """Main Chatter class."""
     def __init__(self, config):
         self.config = config
-
         self.enable_pyttsx3()
         self.enable_gTTS()
 
         try:
             psutil.sensors_battery().power_plugged
             self.device = "laptop"
+            config.device = "laptop"
+            debug_msg("laptop detected",3)
         except AttributeError:
             self.device = "PC"
+            config.device = "PC"
             #self.say('not_a_laptop')
-            debug_msg("PC detected",0)
+            debug_msg("PC detected",3)
             #sys.exit("Cannot get any battery reading")
         self.update_battery()
 
@@ -40,6 +42,7 @@ class Chatter():
             self.actions_battery_lvl.append( Action('less_10' , func = (lambda x: x < 10) , args0 = self.battery,  type = "less"))
             self.actions_battery_lvl.append( Action('less_50' , func = (lambda x: x < 50) , args0 = self.battery ,  type = "less"))
             self.actions_battery_lvl.append( Action( 'more_90' , func = (lambda x: x > 90) , args0 = self.battery  , type = "less"))
+            self.actions_battery_lvl.append( Action('40_charged', func = (lambda x: x > 40), args0 = self.battery, type = "less"))
             self.actions_plug.append( Action('plug_on' , func = (lambda x: x == True ) , args0 = self.pluged ,  type = "less"))
             self.actions_plug.append( Action( 'plug_off' , func = (lambda x: x == False) , args0 = self.pluged , type = "less"))
 
@@ -88,15 +91,18 @@ class Chatter():
     def enable_gTTS(self):
         from gtts import gTTS
 
-    def say(self,topic , mode = "topic"):
+    def say(self,topic , mode = "topic" , args = None):
         if mode == "topic":
             phrase = random.choice(self.config.phrases[topic])
-        if mode == "phrase":
+        elif mode == "phrase":
             phrase = topic
+        elif mode == "interactive":
+            phrase = topic(args)
         else: return 1
 
         if self.config.voice_mode == 'gTTS':
             if self.is_connected():
+                #print("Say")
                 tts = gTTS(text=phrase, lang=self.config.lang)
                 tts.save("phrase.mp3")
                 os.system("mpg123 -q phrase.mp3")
@@ -104,6 +110,9 @@ class Chatter():
         else:
             engine.say(phrase)
             engine.runAndWait()
+
+    def charge_level(self):
+        pass
 
 
     def is_connected(self):
@@ -130,42 +139,40 @@ class Chatter():
 
 
 
-class Action():
+
+class Action(threading.Thread):
     """Class for templating actions.
     'Swich' type just swich back and forth.
     'less' type triggers when less then once"""
-    def __init__(self, topic , func = None , args0 = None  ,type = "swich" , delay = None ):
+    def __init__(self, name , config , func = None , args0 = None ,delay = None ,type = "swich"  , phrases = [] , pharse_args = {} ):
+        threading.Thread.__init__(self)
+        self.name = name
+        self.type = type
         self.func = func
         self.args0 = args0
-        self.type = type
-        self.topic = topic
-
-
+        self.phrases = phrases
+        self.base_flag = False
+        if self.type == "swich" or self.type == "less":
+            if self.func == None or self.args0 == None:
+                sys.exit(f"No function or argument in {self.name}")
+            #self.state = func(args0)
+            self.state = self.get_state(args0)
+            self.base_flag = self.state
         if self.type == "timer":
-            self.start_time = time.perf_counter()
             if delay == None:
-                debug_msg(f"No delay set! In action = {self.topic}! Setting auto time",0)
-                self.delay = (800,1200)
-            self.delay = delay
-            self.wait_time = random.randint(*self.delay)
-
-        if self.type == "less" or self.type == "swich":
-            if self.func == None:
-                sys.exit(f"Function for {self.topic} not set even if type set as a swich type. Terminating!")
-            elif ( self.args0 == None):
-                sys.exit(f"Initial values for {self.topic} not set even if type set as a swich type. Terminating!")
-
-            self.base_flag = self.func(args0)
+                sys.exit(f"No dalay in {self.name}")
+            self.start_time = time.perf_counter()
 
 
+    def run(self):
+        while 1:
+            time.sleep(self.config.time_to_skip)
 
+            if (self.get_state()):
+                self.say_phrase(mode = "topic")
 
+    def get_state(self):
 
-
-
-    def check(self,args):
-        if (self.type == "swich" or self.type == "less" ) and args == None:
-            sys.exit(f"Initial values for {self.topic} not set even if type set as a swich type. Terminating!")
         # Simple Swich type
         if self.type == "swich":
             if self.func(args) != self.base_flag:
@@ -190,11 +197,52 @@ class Action():
                 self.start_time = time.perf_counter()
                 self.wait_time = random.randint(*self.delay)
 
-                return True
-            else:
-                return False
 
 
+    def say(self, phrase):
+        phrase = self.replace_constants(phrase)
+        if self.config.voice_mode == 'gTTS':
+            if self.is_connected():
+                #print("Say")
+                tts = gTTS(text=phrase, lang=self.config.lang)
+                tts.save("phrase.mp3")
+                os.system("mpg123 -q phrase.mp3")
+                os.system("rm phrase.mp3")
+        else:
+            engine.say(phrase)
+            engine.runAndWait()
+
+    def say_phrase(self, phrase = "" , mode = "phrase"):
+
+        if mode == "topic":
+            phrase = random.choice(self.config.phrases[self.name])
+            self.say(phrase)
+        if mode == "phrase":
+            self.say(phrase)
+
+
+
+    def replace_constants(self,phrase):
+        phrase.replace('$CHARGE', str(int(psutil.sensors_battery().percent)) )
+
+    def get_state(self,args0):
+        self.state = self.func(self.replace_args(args0))
+        return(state)
+
+    def replace_args(self,args0):
+        new_args = args0
+        for arg in new_args:
+            if arg == "bat_percent":
+                arg =  self.get_battery_readings()['percent']
+            if arg == "bat_charge":
+                arg =  self.get_battery_readings()['charging']
+        return(new_args)
+
+    def get_battery_readings(self):
+        battery = psutil.sensors_battery()
+        plugged = battery.power_plugged
+        percent = battery.percent
+        return({'percent':battery.percent,'charging':battery.power_plugged})
 
 if __name__ ==  '__main__':
     #Case direct call
@@ -203,4 +251,4 @@ if __name__ ==  '__main__':
     #print(chatter.actions_plug)
     #chatter.say("less_5")
 
-    chatter.listen()
+    #chatter.listen()
