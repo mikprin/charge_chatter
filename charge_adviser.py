@@ -34,7 +34,7 @@ class Chatter():
         self.actions_battery_lvl = []
         self.actions_plug = []
         self.action_random = []
-
+        '''
         if self.device == "laptop":
             self.actions_battery_lvl.append( Action('less_5', func = (lambda x: x < 5) , args0 = self.battery ,  type = "less"))
             self.actions_battery_lvl.append( Action('less_10' , func = (lambda x: x < 10) , args0 = self.battery,  type = "less"))
@@ -44,9 +44,13 @@ class Chatter():
             self.actions_plug.append( Action( 'plug_off' , func = (lambda x: x == False) , args0 = self.pluged , type = "less"))
 
         self.action_random.append(Action('random_events' , delay = self.config.random_events_delay , type = "timer" )   )
+        __init__(self, topic , func = None , args0 = None  ,type = "swich" , delay = None )
+        '''
+        self.actions = []
+        self.actions.append( Action ("random_events",type = "timer" , delay = (2,5)))
 
-
-
+        for action in self.actions:
+            action.start()
 
     def listen(self):
         ''' Main method! Here it loops! '''
