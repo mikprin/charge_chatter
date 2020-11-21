@@ -10,6 +10,11 @@ class Config():
     voice_mode = 'gTTS' # 'pyttsx3'
 
 
+    # $CHARGE = current charge
+    # In action:
+    # "bat_percent"
+    # "bat_charge"
+    # "is_open_{name}"
 
 
     phrases = {
@@ -32,10 +37,13 @@ class Config():
     'charge_reminder':['Reactor charge level at $CHARGE percent.', 'Reminder, charge at $CHARGE percent.']
     }
 
+
+
+
     sounds = {}
-    charge_reminder_delay = 3000
-    random_events_delay = (600,3600)
-    time_to_skip = 1 # For CPU unload I proouse 1s delay on loop.
+    charge_reminder_delay = 3000 # Charge level reminder delay
+    random_events_delay = (600,3600) # In seconds (min , max )
+    time_to_skip = 1 # 1 = 1s For CPU unload I proouse 1s delay on loop. Increase to less stress CPU.
 
     def __init__(self):
         pass
