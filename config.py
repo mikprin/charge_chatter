@@ -4,7 +4,7 @@ import os
 class Config():
     """docstring for Config."""
 
-    lang = 'en'
+    lang = 'en' # Lang should be = the language of phrases
     action_on_discharge_performed = False
 
     voice_mode = 'gTTS' # 'pyttsx3'
@@ -33,17 +33,17 @@ class Config():
     #'not_a_laptop':["Sorry buddy. This is not a laptop. Proposal: install me on your laptop. Bye!"],
     #'atom_on':["It seems that"],
     'random_events':["I'm still here and you are still amaizing!","Another day. Another problems to solve.","Sound check. Are you still there human?",
-    "Remember. Big brother is watching you! "],
+    "Remember. Big brother is watching you! ", "Email my creator if you really want to see me speaking russian. Wink wink"],
     'charge_reminder':['Reactor charge level at $CHARGE percent.', 'Reminder, charge at $CHARGE percent.']
     }
 
 
 
 
-    sounds = {}
+    sounds = {} # NOT WORKING YET
     charge_reminder_delay = 3000 # Charge level reminder delay
-    random_events_delay = (600,3600) # In seconds (min , max )
+    random_events_delay = (300,1600) # In seconds (min , max )
     time_to_skip = 1 # 1 = 1s For CPU unload I proouse 1s delay on loop. Increase to less stress CPU.
-
+    offline_mode = True # Try to play phrases with nasty offline synthesizer
     def __init__(self):
         pass

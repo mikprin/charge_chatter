@@ -18,6 +18,7 @@ class Chatter():
         self.enable_gTTS()
 
         try:
+            # If cach exception then != laptop
             psutil.sensors_battery().power_plugged
             self.device = "laptop"
             config.device = "laptop"
@@ -76,8 +77,8 @@ class Chatter():
                 #print(f"Check for {action.topic}")
                 self.say(action.topic)
 
-
     def update_battery(self):
+        '''Useless func'''
         if self.device == "laptop":
             battery = psutil.sensors_battery()
             self.battery = battery.percent
@@ -87,6 +88,7 @@ class Chatter():
             pass
 
     def enable_pyttsx3(self):
+        '''Enabe offline synthesizer'''
         import pyttsx3
         engine = pyttsx3.init()
     def enable_gTTS(self):
@@ -102,7 +104,7 @@ class Chatter():
         else: return 1
 
         if self.config.voice_mode == 'gTTS':
-            if self.is_connected():
+            if is_connected():
                 #print("Say")
                 tts = gTTS(text=phrase, lang=self.config.lang)
                 tts.save("phrase.mp3")
@@ -116,15 +118,7 @@ class Chatter():
         pass
 
 
-    def is_connected(self):
-        try:
-            # connect to the host -- tells us if the host is actually
-            # reachable
-            socket.create_connection(("1.1.1.1", 53))
-            return True
-        except OSError:
-            pass
-        return False
+
 
     def check_sys(self):
         from sys import platform
@@ -144,7 +138,8 @@ class Chatter():
 class Action(threading.Thread):
     """Class for templating actions.
     'Swich' type just swich back and forth.
-    'less' type triggers when less then once"""
+    'less' type triggers when less then once
+    Action is to say phrase with topic = self.name from self.config"""
     def __init__(self, name , config , func = None , args0 = None ,delay = None ,type = "swich"  , phrases = [] , pharse_args = {} ):
         threading.Thread.__init__(self)
         self.name = name
@@ -154,6 +149,7 @@ class Action(threading.Thread):
         self.args0 = args0
         self.phrases = phrases
         self.base_flag = False
+        self.delay = delay
         if self.type == "swich" or self.type == "less":
             if self.func == None or self.args0 == None:
                 sys.exit(f"No function or argument in {self.name}")
@@ -164,27 +160,27 @@ class Action(threading.Thread):
             if delay == None:
                 sys.exit(f"No dalay in {self.name}")
             self.start_time = time.perf_counter()
-
+            self.wait_time = random.randint(*self.delay)
 
     def run(self):
+        '''Run thread!'''
         while 1:
             time.sleep(self.config.time_to_skip)
-
-            if (self.get_state()):
+            if (self.get_state(self.args0)):
                 self.say_phrase(mode = "topic")
 
-    def get_state(self):
-
+    def get_state(self,args):
+        '''See if activation is needed'''
         # Simple Swich type
         if self.type == "swich":
             if self.func(args) != self.base_flag:
-                self.base_flag = self.func(args)
+                self.base_flag = self.func(self.replace_args(args))
                 return True
             else:
                 return False
         # Less Swich type
         if self.type =="less":
-            if self.func(args) == True:
+            if self.func(self.replace_args(args)) == True:
                 if self.base_flag == False:
                     self.base_flag = True
                     return True
@@ -198,26 +194,30 @@ class Action(threading.Thread):
                 debug_msg(f"time is {time.perf_counter() - self.start_time} ", 10 )
                 self.start_time = time.perf_counter()
                 self.wait_time = random.randint(*self.delay)
+                return True
+            else: return False
 
 
 
     def say(self, phrase):
         phrase = self.replace_constants(phrase)
         if self.config.voice_mode == 'gTTS':
-            if self.is_connected():
-                #print("Say")
+            if is_connected():
+                print("Say")
                 tts = gTTS(text=phrase, lang=self.config.lang)
                 tts.save("phrase.mp3")
                 os.system("mpg123 -q phrase.mp3")
                 os.system("rm phrase.mp3")
         else:
-            engine.say(phrase)
-            engine.runAndWait()
+            if self.config.offline_mode == True:
+                engine.say(phrase)
+                engine.runAndWait()
 
     def say_phrase(self, phrase = "" , mode = "phrase"):
-
+        '''Choose phrase (or just say phrase)'''
         if mode == "topic":
             phrase = random.choice(self.config.phrases[self.name])
+            print(f"mode = {mode}, topic = {phrase} ")
             self.say(phrase)
         if mode == "phrase":
             self.say(phrase)
@@ -225,20 +225,19 @@ class Action(threading.Thread):
 
 
     def replace_constants(self,phrase):
-        phrase.replace('$CHARGE', str(int(psutil.sensors_battery().percent)) )
+        replaced_phrase = phrase.replace('$CHARGE', str(int(psutil.sensors_battery().percent)) )
+        return replaced_phrase
 
-    def get_state(self,args0):
-        self.state = self.func(self.replace_args(args0))
-        return(state)
 
     def replace_args(self,args0):
-        new_args = args0
-        for arg in new_args:
-            if arg == "bat_percent":
-                arg =  self.get_battery_readings()['percent']
-            if arg == "bat_charge":
-                arg =  self.get_battery_readings()['charging']
-        return(new_args)
+        if args0 != None:
+                for arg in new_args:
+                    new_args = args0
+                    if arg == "bat_percent":
+                        arg =  self.get_battery_readings()['percent']
+                    if arg == "bat_charge":
+                        arg =  self.get_battery_readings()['charging']
+                return(new_args)
 
     def get_battery_readings(self):
         battery = psutil.sensors_battery()
