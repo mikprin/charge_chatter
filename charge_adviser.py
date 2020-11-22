@@ -47,10 +47,11 @@ class Chatter():
             self.actions_plug.append( Action( 'plug_off' , func = (lambda x: x == False) , args0 = self.pluged , type = "less"))
 
         self.action_random.append(Action('random_events' , delay = self.config.random_events_delay , type = "timer" )   )
-        __init__(self, topic , func = None , args0 = None  ,type = "swich" , delay = None )
+        def __init__(self, name , config , func = None , args0 = None ,delay = None ,type = "swich"  , phrases = [] , pharse_args = {} ):
+
         '''
         self.actions = []
-        self.actions.append( Action ("random_events",type = "timer" , delay = (2,5)))
+        self.actions.append( Action ("random_events", self.config ,type = "timer" , delay = (2,5) ))
 
         for action in self.actions:
             action.start()
@@ -147,6 +148,7 @@ class Action(threading.Thread):
     def __init__(self, name , config , func = None , args0 = None ,delay = None ,type = "swich"  , phrases = [] , pharse_args = {} ):
         threading.Thread.__init__(self)
         self.name = name
+        self.config = config
         self.type = type
         self.func = func
         self.args0 = args0
