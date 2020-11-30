@@ -8,7 +8,7 @@ import os
 import socket
 from gtts import gTTS
 from util import *
-
+import datetime
 
 class Chatter():
     """Main Chatter class."""
@@ -52,7 +52,7 @@ class Chatter():
 
         '''
         self.actions = []
-        self.actions.append( Action ("random_events", self.config ,type = "timer" , delay = (2,5) ))
+        self.actions.append( Action ("random_events", self.config ,type = "timer" , delay = self.config.random_events_delay ))
 
         for action in self.actions:
             action.start()
